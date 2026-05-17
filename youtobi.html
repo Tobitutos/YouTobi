@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YOUTOBI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0a0f; color: #fff; font-family: 'Bebas Neue', 'Arial Black', sans-serif; overflow-x: hidden; }
+
+/* NAVBAR */
+.navbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+.logo { font-size: 28px; letter-spacing: 4px; color: #e63946; font-weight: 900; cursor: default; user-select: none; }
+.logo span { color: #fff; }
+.nav-links { display: flex; gap: 20px; font-size: 13px; letter-spacing: 1px; }
+.nav-links span { cursor: pointer; color: #ccc; transition: color 0.2s; font-family: 'Segoe UI', sans-serif; }
+.nav-links span:hover, .nav-links span.active { color: #fff; }
+.nav-right { display: flex; align-items: center; gap: 14px; }
+.search-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: #fff; font-family: 'Segoe UI', sans-serif; outline: none; width: 160px; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: #e63946; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; font-family: 'Segoe UI', sans-serif; font-weight: 700; position: relative; }
+.avatar-menu { position: absolute; top: 44px; right: 0; background: #13131a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; min-width: 180px; overflow: hidden; display: none; z-index: 200; }
+.avatar-menu.open { display: block; }
+.avatar-menu-item { padding: 12px 16px; font-family: 'Segoe UI', sans-serif; font-size: 13px; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.avatar-menu-item:hover { background: rgba(255,255,255,0.05); }
+.avatar-menu-item:last-child { border-bottom: none; color: #e63946; }
+.btn-login-nav { background: #e63946; color: #fff; border: none; padding: 7px 18px; font-size: 12px; letter-spacing: 1px; cursor: pointer; border-radius: 4px; font-family: 'Bebas Neue', sans-serif; transition: background 0.2s; }
+.btn-login-nav:hover { background: #c1121f; }
+
+/* AUTH MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #13131a; border: 1px solid rgba(230,57,70,0.2); border-radius: 12px; padding: 36px; width: 100%; max-width: 360px; position: relative; }
+.modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: #555; font-size: 20px; cursor: pointer; }
+.modal-close:hover { color: #fff; }
+.modal-logo { font-size: 22px; letter-spacing: 4px; color: #e63946; font-weight: 900; margin-bottom: 4px; }
+.modal-logo span { color: #fff; }
+.modal-tabs { display: flex; gap: 0; margin-bottom: 24px; margin-top: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.modal-tab { flex: 1; text-align: center; padding: 8px; font-size: 12px; letter-spacing: 1px; cursor: pointer; color: #666; border-bottom: 2px solid transparent; transition: all 0.15s; font-family: 'Segoe UI', sans-serif; }
+.modal-tab.active { color: #e63946; border-bottom-color: #e63946; }
+label { display: block; font-size: 11px; letter-spacing: 1px; color: #888; text-transform: uppercase; margin-bottom: 6px; font-family: 'Segoe UI', sans-serif; }
+input[type=email], input[type=password], input[type=text] { width: 100%; background: #0a0a0f; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 10px 14px; color: #fff; font-size: 14px; font-family: 'Segoe UI', sans-serif; outline: none; transition: border 0.2s; margin-bottom: 14px; }
+input:focus { border-color: #e63946; }
+.btn-auth { width: 100%; background: #e63946; color: #fff; border: none; padding: 12px; font-size: 14px; font-weight: 700; letter-spacing: 2px; cursor: pointer; border-radius: 6px; font-family: 'Bebas Neue', sans-serif; transition: background 0.2s; margin-top: 4px; }
+.btn-auth:hover { background: #c1121f; }
+.auth-error { color: #e63946; font-size: 12px; font-family: 'Segoe UI', sans-serif; margin-bottom: 10px; display: none; }
+.auth-success { color: #4ade80; font-size: 12px; font-family: 'Segoe UI', sans-serif; margin-bottom: 10px; display: none; }
+
+/* HERO */
+.hero { position: relative; height: 100vh; overflow: hidden; background: linear-gradient(135deg, #1a0a2e 0%, #0d1b3e 50%, #0a0a0f 100%); display: flex; align-items: flex-end; padding: 80px 40px; }
+.hero-bg { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(230,57,70,0.03) 40px, rgba(230,57,70,0.03) 80px); }
+.hero-badge { display: inline-block; background: #e63946; color: #fff; font-size: 11px; letter-spacing: 2px; padding: 4px 12px; border-radius: 2px; margin-bottom: 10px; font-family: 'Segoe UI', sans-serif; }
+.hero-title { font-size: 72px; letter-spacing: 8px; line-height: 1; margin-bottom: 10px; text-shadow: 0 0 40px rgba(230,57,70,0.5); }
+.hero-meta { font-family: 'Segoe UI', sans-serif; font-size: 13px; color: #aaa; margin-bottom: 16px; }
+.hero-meta span { margin-right: 16px; }
+.hero-desc { font-family: 'Segoe UI', sans-serif; font-size: 14px; color: #ccc; max-width: 500px; line-height: 1.6; margin-bottom: 24px; }
+.hero-btns { display: flex; gap: 12px; }
+.btn-play { background: #e63946; color: #fff; border: none; padding: 14px 32px; font-size: 16px; font-weight: 700; letter-spacing: 2px; cursor: pointer; border-radius: 4px; font-family: 'Bebas Neue', sans-serif; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+.btn-play:hover { background: #c1121f; }
+.btn-info { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); padding: 14px 32px; font-size: 16px; font-weight: 700; letter-spacing: 2px; cursor: pointer; border-radius: 4px; font-family: 'Bebas Neue', sans-serif; transition: background 0.2s; }
+.btn-info:hover { background: rgba(255,255,255,0.25); }
+
+/* SECTIONS */
+.section { padding: 20px 24px; }
+.section-title { font-size: 18px; letter-spacing: 3px; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08); }
+.cards-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.cards-row::-webkit-scrollbar { height: 3px; }
+.cards-row::-webkit-scrollbar-thumb { background: #e63946; border-radius: 2px; }
+
+/* CARD */
+.card { min-width: 140px; border-radius: 6px; overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; flex-shrink: 0; }
+.card:hover { transform: scale(1.06); box-shadow: 0 8px 30px rgba(230,57,70,0.4); }
+.card-thumb { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; background: #13131a; overflow: hidden; }
+.card-thumb img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.card-badge { position: absolute; top: 8px; left: 8px; background: #e63946; font-size: 9px; letter-spacing: 1px; padding: 3px 7px; border-radius: 2px; font-family: 'Segoe UI', sans-serif; font-weight: 700; z-index: 1; }
+.card-badge-peli { background: #f4a261; }
+.card-info { background: #13131a; padding: 10px; }
+.card-name { font-size: 12px; letter-spacing: 1px; color: #fff; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-sub { font-family: 'Segoe UI', sans-serif; font-size: 11px; color: #777; }
+.rating { color: #f4a261; }
+
+/* PROGRESS BAR ON CARD */
+.card-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.1); }
+.card-progress-fill { height: 100%; background: #e63946; transition: width 0.3s; }
+
+/* SERIES PANEL */
+.selected-series { background: #13131a; border-radius: 8px; padding: 16px; margin: 0 24px 20px; border: 1px solid rgba(230,57,70,0.2); }
+.series-header { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+.series-icon { width: 60px; height: 80px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; background: #0a0a0f; overflow: hidden; }
+.series-icon img { width: 100%; height: 100%; object-fit: cover; }
+.series-title { font-size: 22px; letter-spacing: 3px; margin-bottom: 4px; }
+.series-meta { font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #aaa; margin-bottom: 8px; }
+.series-desc { font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #bbb; line-height: 1.6; }
+.season-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.season-tab { font-size: 11px; letter-spacing: 1px; padding: 6px 14px; border-radius: 3px; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #aaa; font-family: 'Segoe UI', sans-serif; transition: all 0.15s; }
+.season-tab.active { background: #e63946; border-color: #e63946; color: #fff; }
+.episodes-list { display: flex; flex-direction: column; gap: 8px; }
+.episode { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s; border: 1px solid transparent; position: relative; overflow: hidden; }
+.episode:hover { background: rgba(255,255,255,0.05); border-color: rgba(230,57,70,0.2); }
+.ep-progress-bar { position: absolute; bottom: 0; left: 0; height: 2px; background: #e63946; pointer-events: none; }
+.ep-num { font-size: 20px; letter-spacing: 2px; color: #555; min-width: 30px; }
+.ep-thumb { width: 90px; height: 52px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; background: #0a0a0f; }
+.ep-info { flex: 1; }
+.ep-title { font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
+.ep-desc { font-family: 'Segoe UI', sans-serif; font-size: 11px; color: #666; }
+.ep-dur { font-family: 'Segoe UI', sans-serif; font-size: 11px; color: #555; white-space: nowrap; }
+.ep-play { width: 32px; height: 32px; border-radius: 50%; background: rgba(230,57,70,0.2); border: 1px solid rgba(230,57,70,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; transition: background 0.15s; }
+.ep-play:hover { background: #e63946; }
+.ep-continue { font-family: 'Segoe UI', sans-serif; font-size: 10px; color: #e63946; letter-spacing: 1px; }
+
+.empty-cat { text-align: center; padding: 60px 20px; color: #444; font-family: 'Segoe UI', sans-serif; font-size: 13px; }
+.divider { height: 1px; background: rgba(255,255,255,0.05); margin: 4px 24px; }
+
+/* SKELETON */
+.skeleton { background: linear-gradient(90deg, #13131a 25%, #1a1a2e 50%, #13131a 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-card { min-width: 140px; height: 240px; flex-shrink: 0; }
+
+/* PLAYER */
+.player-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
+.player-overlay.active { display: flex; }
+.player-top-bar { display: flex; align-items: center; gap: 16px; padding: 16px 24px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); position: absolute; top: 0; left: 0; right: 0; z-index: 10; }
+.player-back { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 4px 8px; }
+.player-title-bar { font-size: 18px; letter-spacing: 3px; }
+.player-ep-label { font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #aaa; }
+video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+.player-controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 20px 24px 24px; opacity: 0; transition: opacity 0.3s; }
+.player-overlay:hover .player-controls { opacity: 1; }
+.progress-bar-wrap { position: relative; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; margin-bottom: 14px; }
+.progress-bar-fill { height: 100%; background: #e63946; border-radius: 2px; pointer-events: none; }
+.progress-thumb { position: absolute; top: 50%; transform: translate(-50%,-50%); width: 14px; height: 14px; background: #e63946; border-radius: 50%; pointer-events: none; }
+.controls-row { display: flex; align-items: center; gap: 16px; }
+.ctrl-btn { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 4px; transition: color 0.15s; line-height: 1; }
+.ctrl-btn:hover { color: #e63946; }
+.time-display { font-family: 'Segoe UI', sans-serif; font-size: 13px; color: #ccc; min-width: 100px; }
+.volume-wrap { display: flex; align-items: center; gap: 8px; }
+.volume-slider { width: 80px; accent-color: #e63946; }
+.ctrl-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.speed-select { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-family: 'Segoe UI', sans-serif; font-size: 12px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; right: 24px; background: #13131a; border: 1px solid rgba(74,222,128,0.4); border-radius: 8px; padding: 14px 20px; font-size: 13px; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.3s; font-family: 'Segoe UI', sans-serif; color: #4ade80; }
+.toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <div class="logo" ondblclick="abrirAdmin()">YOU<span>TOBI</span></div>
+  <div class="nav-links">
+    <span class="active" onclick="filtrar('todos')">Inicio</span>
+    <span onclick="filtrar('serie')">Series</span>
+    <span onclick="filtrar('pelicula')">Películas</span>
+  </div>
+  <div class="nav-right">
+    <input class="search-box" placeholder="🔍  Buscar..." oninput="buscar(this.value)" />
+    <div id="navAuth">
+      <button class="btn-login-nav" onclick="abrirModal('login')">ENTRAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrarModal()">✕</button>
+    <div class="modal-logo">YOU<span>TOBI</span></div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" id="tabLogin" onclick="switchAuthTab('login')">INICIAR SESIÓN</div>
+      <div class="modal-tab" id="tabRegister" onclick="switchAuthTab('register')">REGISTRARSE</div>
+    </div>
+    <div id="authError" class="auth-error"></div>
+    <div id="authSuccess" class="auth-success"></div>
+    <div id="loginForm">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="tu@email.com" />
+      <label>Contraseña</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" />
+      <button class="btn-auth" onclick="doLogin()">ENTRAR</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <label>Email</label>
+      <input type="email" id="regEmail" placeholder="tu@email.com" />
+      <label>Contraseña</label>
+      <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" />
+      <label>Confirmar contraseña</label>
+      <input type="password" id="regPassword2" placeholder="••••••••" />
+      <button class="btn-auth" onclick="doRegister()">CREAR CUENTA</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENIDO -->
+<div style="padding-top:64px">
+  <div class="hero" id="heroSection">
+    <div class="hero-bg"></div>
+    <div style="position:relative;z-index:1" id="heroContent">
+      <div class="hero-badge">⭐ DESTACADO</div>
+      <div class="hero-title">YOUTOBI</div>
+      <div class="hero-desc">Cargando contenido...</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔥 SERIES</div>
+    <div class="cards-row" id="rowSeries">
+      <div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎬 PELÍCULAS</div>
+    <div class="cards-row" id="rowPeliculas">
+      <div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>
+    </div>
+  </div>
+
+  <div id="series-panel" style="display:none">
+    <div class="divider"></div>
+    <div id="series-content"></div>
+  </div>
+</div>
+
+<!-- PLAYER -->
+<div class="player-overlay" id="playerOverlay">
+  <div class="player-top-bar">
+    <button class="player-back" onclick="closePlayer()">← Volver</button>
+    <div>
+      <div class="player-title-bar" id="playerTitle"></div>
+      <div class="player-ep-label" id="playerEpLabel"></div>
+    </div>
+  </div>
+  <video id="mainVideo" onclick="togglePlay()"></video>
+  <div class="player-controls">
+    <div class="progress-bar-wrap" id="progressWrap" onclick="seekVideo(event)">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      <div class="progress-thumb" id="progressThumb" style="left:0%"></div>
+    </div>
+    <div class="controls-row">
+      <button class="ctrl-btn" onclick="skipTime(-10)">⏪</button>
+      <button class="ctrl-btn" id="playPauseBtn" onclick="togglePlay()">⏸</button>
+      <button class="ctrl-btn" onclick="skipTime(10)">⏩</button>
+      <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+      <div class="volume-wrap">
+        <button class="ctrl-btn" onclick="toggleMute()" id="muteBtn">🔊</button>
+        <input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)">
+      </div>
+      <div class="ctrl-right">
+        <select class="speed-select" onchange="setSpeed(this.value)">
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+        <button class="ctrl-btn" onclick="toggleFullscreen()">⛶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://bjrgcwfqeutitkmiqfvn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqcmdjd2ZxZXV0aXRrbWlxZnZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5Mjc3MjcsImV4cCI6MjA5NDUwMzcyN30.Yt_nmhhJ1Bo9cB9yTBKVMMoYtyHF9YPWwPkAWIQll4U';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let todosLosContenidos = [];
+let currentSerieId = null, currentSeason = 0, currentTemporadas = [];
+let currentUser = null;
+let currentVideoId = null, currentVideoType = null; // 'episodio' | 'pelicula'
+let progresoCache = {};
+let saveInterval = null;
+
+// ADMIN
+function abrirAdmin() { window.open('youtobi-admin.html', '_blank'); }
+
+// TOAST
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// AUTH
+async function initAuth() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) setUser(session.user);
+  db.auth.onAuthStateChange((_, session) => {
+    if (session) setUser(session.user); else clearUser();
+  });
+}
+
+function setUser(user) {
+  currentUser = user;
+  const initial = user.email[0].toUpperCase();
+  document.getElementById('navAuth').innerHTML = `
+    <div class="avatar" onclick="toggleAvatarMenu()">
+      ${initial}
+      <div class="avatar-menu" id="avatarMenu">
+        <div class="avatar-menu-item" style="color:#888;font-size:11px;font-family:'Segoe UI',sans-serif">${user.email}</div>
+        <div class="avatar-menu-item" onclick="doLogout()">CERRAR SESIÓN</div>
+      </div>
+    </div>`;
+  cargarProgreso();
+}
+
+function clearUser() {
+  currentUser = null;
+  progresoCache = {};
+  document.getElementById('navAuth').innerHTML = `<button class="btn-login-nav" onclick="abrirModal('login')">ENTRAR</button>`;
+}
+
+function toggleAvatarMenu() {
+  document.getElementById('avatarMenu')?.classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.avatar')) document.getElementById('avatarMenu')?.classList.remove('open');
+});
+
+function abrirModal(tab) {
+  document.getElementById('authModal').classList.add('open');
+  switchAuthTab(tab);
+  clearAuthMessages();
+}
+function cerrarModal() { document.getElementById('authModal').classList.remove('open'); }
+document.getElementById('authModal').addEventListener('click', e => { if (e.target === document.getElementById('authModal')) cerrarModal(); });
+
+function switchAuthTab(tab) {
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  clearAuthMessages();
+}
+
+function clearAuthMessages() {
+  const e = document.getElementById('authError'); e.style.display = 'none'; e.textContent = '';
+  const s = document.getElementById('authSuccess'); s.style.display = 'none'; s.textContent = '';
+}
+function showAuthError(msg) { const e = document.getElementById('authError'); e.textContent = msg; e.style.display = 'block'; }
+function showAuthSuccess(msg) { const s = document.getElementById('authSuccess'); s.textContent = msg; s.style.display = 'block'; }
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) return showAuthError('Email o contraseña incorrectos');
+  cerrarModal();
+  showToast('✓ Bienvenido de vuelta!');
+}
+
+async function doRegister() {
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const password2 = document.getElementById('regPassword2').value;
+  if (password !== password2) return showAuthError('Las contraseñas no coinciden');
+  if (password.length < 6) return showAuthError('La contraseña debe tener al menos 6 caracteres');
+  const { error } = await db.auth.signUp({ email, password });
+  if (error) return showAuthError(error.message);
+  showAuthSuccess('¡Cuenta creada! Revisá tu email para confirmar.');
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  showToast('Sesión cerrada');
+}
+
+// PROGRESO
+async function cargarProgreso() {
+  if (!currentUser) return;
+  const { data } = await db.from('progreso').select('*').eq('user_id', currentUser.id);
+  progresoCache = {};
+  (data || []).forEach(p => {
+    if (p.episodio_id) progresoCache['ep_' + p.episodio_id] = p;
+    if (p.pelicula_video_id) progresoCache['pv_' + p.pelicula_video_id] = p;
+  });
+}
+
+async function guardarProgreso() {
+  if (!currentUser || !currentVideoId || !video.duration) return;
+  const segundo = Math.floor(video.currentTime);
+  const key = currentVideoType === 'episodio' ? 'episodio_id' : 'pelicula_video_id';
+  const cacheKey = currentVideoType === 'episodio' ? 'ep_' + currentVideoId : 'pv_' + currentVideoId;
+  const payload = { user_id: currentUser.id, [key]: currentVideoId, segundo, updated_at: new Date().toISOString() };
+  const existing = progresoCache[cacheKey];
+  if (existing) {
+    await db.from('progreso').update({ segundo, updated_at: payload.updated_at }).eq('id', existing.id);
+    progresoCache[cacheKey].segundo = segundo;
+  } else {
+    const { data } = await db.from('progreso').insert(payload).select().single();
+    if (data) progresoCache[cacheKey] = data;
+  }
+}
+
+function getPorcentaje(type, id) {
+  const cacheKey = type === 'episodio' ? 'ep_' + id : 'pv_' + id;
+  const p = progresoCache[cacheKey];
+  if (!p || !p.segundo) return 0;
+  return p.segundo;
+}
+
+// CATÁLOGO
+async function cargarCatalogo() {
+  const { data, error } = await db.from('contenido').select('*').order('created_at', { ascending: false });
+  if (error || !data) return;
+  todosLosContenidos = data;
+  renderCatalogo(data);
+  if (data.length > 0) renderHero(data[0]);
+}
+
+function renderHero(c) {
+  document.getElementById('heroContent').innerHTML = `
+    <div class="hero-badge">⭐ DESTACADO</div>
+    <div class="hero-title">${c.titulo}</div>
+    <div class="hero-meta">
+      ${c.anio ? `<span>${c.anio}</span>` : ''}
+      <span style="color:#4ade80">✓ HD</span>
+      ${c.genero ? `<span>${c.genero}</span>` : ''}
+      ${c.rating ? `<span style="color:#f4a261">★ ${c.rating}</span>` : ''}
+    </div>
+    ${c.descripcion ? `<div class="hero-desc">${c.descripcion}</div>` : ''}
+    <div class="hero-btns">
+      <button class="btn-play" onclick="${c.tipo === 'serie' ? `verSerie('${c.id}')` : `reproducirPelicula('${c.id}','${c.titulo}')`}">▶  REPRODUCIR</button>
+      ${c.tipo === 'serie' ? `<button class="btn-info" onclick="verSerie('${c.id}')">ℹ  MÁS INFO</button>` : ''}
+    </div>`;
+}
+
+function renderCatalogo(data) {
+  renderRow('rowSeries', data.filter(c => c.tipo === 'serie'), 'serie');
+  renderRow('rowPeliculas', data.filter(c => c.tipo === 'pelicula'), 'pelicula');
+}
+
+const gradients = ['linear-gradient(135deg,#1a0a2e,#0d1b3e)','linear-gradient(135deg,#0a1f0a,#1a3a1a)','linear-gradient(135deg,#001a2e,#002e4d)','linear-gradient(135deg,#2e1a00,#4d2e00)','linear-gradient(135deg,#1a001a,#3a003a)'];
+const emojis = ['🚀','🌲','🤖','🏜️','🧙','💥','🌊','⚡','🕵️','🦸'];
+
+function renderRow(rowId, items, tipo) {
+  const row = document.getElementById(rowId);
+  if (!items.length) { row.innerHTML = `<div class="empty-cat">No hay ${tipo === 'serie' ? 'series' : 'películas'} todavía.</div>`; return; }
+  row.innerHTML = items.map((c, i) => `
+    <div class="card" onclick="${tipo === 'serie' ? `verSerie('${c.id}')` : `reproducirPelicula('${c.id}','${c.titulo}')`}">
+      <div class="card-thumb" style="background:${gradients[i % gradients.length]}">
+        ${c.miniatura ? `<img src="${c.miniatura}" alt="${c.titulo}">` : `<span>${emojis[i % emojis.length]}</span>`}
+        <div class="card-badge ${tipo === 'pelicula' ? 'card-badge-peli' : ''}">${tipo === 'serie' ? 'SERIE' : 'PELI'}</div>
+      </div>
+      <div class="card-info">
+        <div class="card-name">${c.titulo}</div>
+        <div class="card-sub">${c.rating ? `<span class="rating">★ ${c.rating}</span>` : ''} ${c.genero ? '· ' + c.genero : ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function filtrar(tipo) {
+  document.querySelectorAll('.nav-links span').forEach((el, i) => {
+    el.classList.toggle('active', (tipo==='todos'&&i===0)||(tipo==='serie'&&i===1)||(tipo==='pelicula'&&i===2));
+  });
+  renderCatalogo(tipo === 'todos' ? todosLosContenidos : todosLosContenidos.filter(c => c.tipo === tipo));
+  document.getElementById('series-panel').style.display = 'none';
+}
+
+function buscar(q) {
+  if (!q.trim()) { renderCatalogo(todosLosContenidos); return; }
+  renderCatalogo(todosLosContenidos.filter(c => c.titulo.toLowerCase().includes(q.toLowerCase()) || (c.genero||'').toLowerCase().includes(q.toLowerCase())));
+}
+
+// SERIE PANEL
+async function verSerie(id) {
+  currentSerieId = id; currentSeason = 0;
+  const serie = todosLosContenidos.find(c => c.id === id);
+  const { data: temps } = await db.from('temporadas').select('*').eq('contenido_id', id).order('numero');
+  currentTemporadas = temps || [];
+  renderSeriePanel(serie);
+  document.getElementById('series-panel').style.display = 'block';
+  document.getElementById('series-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function renderSeriePanel(serie) {
+  if (!serie) return;
+  const panel = document.getElementById('series-content');
+  if (!currentTemporadas.length) {
+    panel.innerHTML = `<div class="selected-series"><p style="color:#555;font-family:'Segoe UI',sans-serif;font-size:13px;padding:20px">Esta serie no tiene temporadas todavía.</p></div>`;
+    return;
+  }
+  const temp = currentTemporadas[currentSeason];
+  const { data: eps } = await db.from('episodios').select('*').eq('temporada_id', temp.id).order('numero');
+  const idx = todosLosContenidos.findIndex(c => c.id === serie.id);
+  const tabs = currentTemporadas.map((t,i) =>
+    `<button class="season-tab ${i===currentSeason?'active':''}" onclick="cambiarTemporada(${i},'${serie.id}')">Temporada ${t.numero}</button>`
+  ).join('');
+  const episodios = (eps||[]).map(ep => {
+    const seg = getPorcentaje('episodio', ep.id);
+    const pct = seg > 0 ? Math.min(99, Math.round((seg / (seg + 300)) * 100)) : 0;
+    const continueLabel = seg > 10 ? `<div class="ep-continue">▶ CONTINUAR ${formatTime(seg)}</div>` : '';
+    return `<div class="episode" onclick="playVideo('${serie.titulo}','T${temp.numero} E${ep.numero} — ${ep.titulo}','${ep.url_video}','episodio','${ep.id}')">
+      <div class="ep-num">${String(ep.numero).padStart(2,'0')}</div>
+      <div class="ep-thumb">🎬</div>
+      <div class="ep-info">
+        <div class="ep-title">${ep.titulo}</div>
+        <div class="ep-desc">${ep.descripcion||''}</div>
+        ${continueLabel}
+      </div>
+      <div class="ep-dur">${ep.duracion||''}</div>
+      <div class="ep-play">▶</div>
+      ${pct > 0 ? `<div class="ep-progress-bar" style="width:${pct}%"></div>` : ''}
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `<div class="selected-series">
+    <div class="series-header">
+      <div class="series-icon" style="background:${gradients[idx%gradients.length]}">${serie.miniatura?`<img src="${serie.miniatura}">`:'🎬'}</div>
+      <div>
+        <div class="series-title">${serie.titulo}</div>
+        <div class="series-meta">${serie.anio||''} · ${serie.genero||''} ${serie.rating?'· <span style="color:#f4a261">★ '+serie.rating+'</span>':''} · ${currentTemporadas.length} Temporada${currentTemporadas.length>1?'s':''}</div>
+        <div class="series-desc">${serie.descripcion||''}</div>
+      </div>
+    </div>
+    <div class="season-tabs">${tabs}</div>
+    <div class="episodes-list">${episodios||'<p style="color:#555;font-family:Segoe UI,sans-serif;font-size:13px;padding:10px">Sin episodios en esta temporada.</p>'}</div>
+  </div>`;
+}
+
+async function cambiarTemporada(i, serieId) {
+  currentSeason = i;
+  renderSeriePanel(todosLosContenidos.find(c => c.id === serieId));
+}
+
+async function reproducirPelicula(id, titulo) {
+  const { data } = await db.from('peliculas_video').select('*').eq('contenido_id', id).single();
+  if (!data?.url_video) return alert('Esta película no tiene video cargado todavía.');
+  playVideo(titulo, 'Película completa', data.url_video, 'pelicula', data.id);
+}
+
+// PLAYER
+const video = document.getElementById('mainVideo');
+
+function playVideo(title, epLabel, url, videoType, videoId) {
+  document.getElementById('playerTitle').textContent = title;
+  document.getElementById('playerEpLabel').textContent = epLabel;
+  document.getElementById('playerOverlay').classList.add('active');
+  currentVideoType = videoType;
+  currentVideoId = videoId;
+  video.src = url;
+  video.load();
+
+  // Retomar desde donde quedó
+  const seg = videoId ? getPorcentaje(videoType, videoId) : 0;
+  video.addEventListener('loadedmetadata', function onMeta() {
+    if (seg > 10) video.currentTime = seg;
+    video.play();
+    video.removeEventListener('loadedmetadata', onMeta);
+  });
+
+  document.getElementById('playPauseBtn').textContent = '⏸';
+  // Guardar progreso cada 10 segundos
+  clearInterval(saveInterval);
+  if (currentUser) saveInterval = setInterval(guardarProgreso, 10000);
+}
+
+function closePlayer() {
+  guardarProgreso();
+  clearInterval(saveInterval);
+  document.getElementById('playerOverlay').classList.remove('active');
+  video.pause(); video.src = '';
+  // Refrescar barras de progreso en la UI
+  const serie = todosLosContenidos.find(c => c.id === currentSerieId);
+  if (serie) renderSeriePanel(serie);
+}
+
+function togglePlay() {
+  if (video.paused) { video.play(); document.getElementById('playPauseBtn').textContent = '⏸'; }
+  else { video.pause(); document.getElementById('playPauseBtn').textContent = '▶'; }
+}
+function skipTime(s) { video.currentTime = Math.max(0, video.currentTime + s); }
+function setVolume(v) { video.volume = v; document.getElementById('muteBtn').textContent = v==0?'🔇':'🔊'; }
+function toggleMute() { video.muted = !video.muted; document.getElementById('muteBtn').textContent = video.muted?'🔇':'🔊'; }
+function setSpeed(s) { video.playbackRate = parseFloat(s); }
+function toggleFullscreen() { const el = document.getElementById('playerOverlay'); if (!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen(); }
+function formatTime(s) { return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'); }
+function seekVideo(e) { const r = document.getElementById('progressWrap').getBoundingClientRect(); video.currentTime = ((e.clientX-r.left)/r.width)*video.duration; }
+
+video.addEventListener('timeupdate', () => {
+  if (!video.duration) return;
+  const pct = (video.currentTime/video.duration)*100;
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressThumb').style.left = pct+'%';
+  document.getElementById('timeDisplay').textContent = formatTime(video.currentTime)+' / '+formatTime(video.duration);
+});
+video.addEventListener('ended', () => { document.getElementById('playPauseBtn').textContent = '▶'; guardarProgreso(); });
+
+// INIT
+initAuth().then(() => cargarCatalogo());
+</script>
+</body>
+</html>
